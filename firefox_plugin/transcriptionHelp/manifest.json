@@ -1,0 +1,16 @@
+{
+  "description": "Adds a dropdown with type prediction for speeding up transcription of Islam Atlas manuscripts.",
+  "manifest_version": 2,
+  "name": "IslamAtlasPredict",
+  "version": "1.0",
+  "homepage_url": "https://github.com/pverkind/IslamAtlasPredict",
+  "icons": {
+    "48": "icons/t.jpg"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://simorgh.umd.edu/*edit*"], // see https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns
+      "js": ["transcriptionHelp.js"]
+    }
+  ]
+}
