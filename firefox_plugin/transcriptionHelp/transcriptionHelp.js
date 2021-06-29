@@ -38,19 +38,19 @@ async function getJsonData(url) {
 }
 
 async function loadBiFreq() {
-    bigrams = await getJsonData("https://pverkind.github.io/predictive_typing/char_ngrams_in_bigrams.json");
+    bigrams = await getJsonData("https://pverkind.github.io/predictive_typing/edge_ngrams_in_bigrams.json");
     console.log("bigrams loaded");
 }
 async function loadTriFreq() {
-    trigrams = await getJsonData("https://pverkind.github.io/predictive_typing/char_ngrams_in_trigrams.json");
+    trigrams = await getJsonData("https://pverkind.github.io/predictive_typing/edge_ngrams_in_trigrams.json");
     console.log("trigrams loaded");
 }
 async function loadBigrams() {
-    biFreq = await getJsonData("https://pverkind.github.io/predictive_typing/source_texts_bigram_count.json");
+    biFreq = await getJsonData("https://pverkind.github.io/predictive_typing/source_texts_bigrams_normalized_keys.json");
     console.log("biFreq loaded");
 }
 async function loadTrigrams() {
-    triFreq = await getJsonData("https://pverkind.github.io/predictive_typing/source_texts_trigram_count.json");
+    triFreq = await getJsonData("https://pverkind.github.io/predictive_typing/source_texts_trigrams_normalized_keys.json");
     console.log("triFreq loaded");
 }
 
@@ -209,17 +209,31 @@ function addToInput(s) {
   textbox.focus();
 }
 
-function lookup(tok, ngrams, freq) {
+function lookup(tok, edgeNgrams, freq) {
+  /* The lookup goes in two stages:
+  1. first the function checks whether the last two tokens are in the edgeNgrams dictionary;
+     the keys in this dictionary are normalized, and the values are the characters
+     that together with the keys form the full ngrams.
+  2. in the next stage, the script checks in the freq dictionary
+     how many times each of the full ngrams that agree with this normalized keys
+     were found in the source texts.
+  Finally, the function returns an array of arrays (prediction, count)
+  */
   //console.log("starting lookup");
-  if (!(normalize(tok) in ngrams)){
+  if (!(normalize(tok) in edgeNgrams)){
     return [];
   }
-  var n = ngrams[normalize(tok)];
+  var n = edgeNgrams[normalize(tok)];
   //console.log("Lookup found "+n.length+" results")
   var r = new Array();
   for (let i=0; i<n.length; i++) {
-    var nxt = n[i].substring(tok.length, n[i].length);
-    r.push([ nxt, freq[n[i]] ]);
+    //var nxt = n[i].substring(tok.length, n[i].length);
+    var nxt = n[i];
+    var normalized_key = normalize(tok+nxt);
+    for (const k in freq[normalized_key]) {
+      r.push([ k.substring(tok.length, k.length), freq[normalized_key][k] ]);
+    }
+
   }
   /*if (r.length > 0) {
     displayPrediction(r);
@@ -281,6 +295,7 @@ function normalize(s) {
   });
   return s
 }
+
 
 function predict(){
   var textbox = document.getElementById("trans-input");
