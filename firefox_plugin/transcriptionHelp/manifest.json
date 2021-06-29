@@ -10,7 +10,13 @@
   "content_scripts": [
     {
       "matches": ["http://simorgh.umd.edu/*edit*"], // see https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns
-      "js": ["transcriptionHelp.js"]
+      "js": ["transcriptionHelp.js"],
+      "css": ["transcriptionHelp.css"]
     }
+  ],
+  "permissions": [
+    "*://raw.githubusercontent.com/pverkind/*",
+    "*://pverkind.github.io/*",
+    "webRequest"
   ]
 }
