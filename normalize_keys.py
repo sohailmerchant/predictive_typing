@@ -19,8 +19,9 @@ def normalized_key_map(d, n=None, normalize_f=normalize_ara_heavy):
         n = dict()
     for k, v in d.items():
         normalized_key = normalize_f(k)
-        if k == normalized_key:
-            k = "id"
+        ## reduce size:
+        #if k == normalized_key:
+        #    k = "id"
         if normalized_key not in n:
             n[normalized_key] = {k: 0}
         if k not in n[normalized_key]:
