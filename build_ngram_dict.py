@@ -6,8 +6,8 @@ from openiti.helper.ara import ar_tok
 from openiti.helper.funcs import get_all_text_files_in_folder
 import time
 
-def count_ngrams(t, n=2, token_regex=ar_tok, ngram_cnt=Counter()):
-    """Count the different ngrams in string `t`.
+def count_ngrams(s, n=2, token_regex=ar_tok, ngram_cnt=Counter()):
+    """Count the different ngrams in string `s`.
 
     Args:
         t (str): string in which the ngrams must be counted
@@ -16,18 +16,27 @@ def count_ngrams(t, n=2, token_regex=ar_tok, ngram_cnt=Counter()):
         ngram_cnt (obj): collections.Counter() object
 
     Returns:
-        dict (key: ngram, val: count)
+        tuple (dict (key: ngram, val: count),
+               str (last n-1 tokens in the string)) 
     """
     #ngram_cnt = Counter()
     toks = deque([None]*n, maxlen=n)
-    for m in re.finditer(token_regex, t):
+    #print(s)
+    for m in re.finditer(token_regex, s):
         toks.append(m.group())
+        #print(toks)
+        #print(" ".join([t for t in toks if t]))
+        
         try:
             ngram = " ".join(toks)  # will fail if toks still contains None value
             ngram_cnt[ngram] += 1
         except:
             continue
-    return ngram_cnt
+    toks.append(None)
+    last_n_minus_one = " ".join([t for t in toks if t])
+    #print("last_n_minus_one:", last_n_minus_one)
+    #input("CONTINUE?")
+    return ngram_cnt, last_n_minus_one
 
 def count_ngrams_in_file(fp, n=2, header_splitter=None,
                          outfolder="ngrams_in_texts",
@@ -50,7 +59,6 @@ def count_ngrams_in_file(fp, n=2, header_splitter=None,
             json file. If True, existing json files will be overwritten.
         across_paragraphs (bool): if False, the script will not consider
             ngrams that straddle two paragraphs. Defaults to False.
-            NOT IMPLEMENTED YET!!
 
     Returns:
         collections.Counter object
@@ -70,6 +78,8 @@ def count_ngrams_in_file(fp, n=2, header_splitter=None,
                 start_counting = False
             
             para = ""
+            prev = ""
+            line = ""
             i = 0
             while True:
                 line = file.readline()
@@ -79,22 +89,34 @@ def count_ngrams_in_file(fp, n=2, header_splitter=None,
                 if not start_counting:  # line still in header
                     if header_splitter in line:
                         start_counting = True
-                if start_counting:
-                    if line.startswith("#"):
-                        if para.strip():
-                            #print(len(para))
-                            count_ngrams(para, n=n, ngram_cnt=fc,
-                                         token_regex=token_regex)
-                            #r = input("Print para? Y/N")
-                            #if r.lower() == "y":
-                            #    print(para)
-                            #    print(json.dumps(pc, ensure_ascii=False, indent=2))
-                            para = line
+                else:
+                    if not across_paragraphs: 
+                        if line.startswith("#"):
+                            if para.strip():
+                                #print(len(para))
+                                count_ngrams(para, n=n, ngram_cnt=fc,
+                                             token_regex=token_regex)
+                                #r = input("Print para? Y/N")
+                                #if r.lower() == "y":
+                                #    print(para)
+                                #    print(json.dumps(pc, ensure_ascii=False, indent=2))
+                                para = line
+                        else:
+                            para += " " + line
                     else:
-                        para += " " + line
+                        if len(para) > 1000:
+                            _, prev = count_ngrams(para, n=n, ngram_cnt=fc,
+                                                   token_regex=token_regex)
+                            para = prev + " " + line
+                        else:
+                            para += " " + line
+                            
+                        
                 if verbose:
                     if not i%10000:
                         print(i, len(fc))
+        # add ngrams from last paragraph:
+        count_ngrams(para, n=n, ngram_cnt=fc, token_regex=token_regex)
         if verbose:
             print(i, "lines")
             print("counting ngrams in {} took {} seconds".format(outfn, time.time()-start))
@@ -144,7 +166,8 @@ def count_ngrams_in_folder(folder, n=2, header_splitter=None,
                            token_regex=ar_tok,
                            overwrite=False,
                            input_threshold=1,
-                           output_threshold=1
+                           output_threshold=1,
+                           across_paragraphs=False
                            ):
     """Count distinct ngrams in the body of a text file\
     and save the count as a json file in `outfolder`.
@@ -175,7 +198,7 @@ def count_ngrams_in_folder(folder, n=2, header_splitter=None,
         print(os.path.basename(fp))
         count_ngrams_in_file(fp, n=n, header_splitter=header_splitter,
                              outfolder=outfolder, token_regex=token_regex,
-                             overwrite=False)
+                             overwrite=overwrite, across_paragraphs=across_paragraphs)
     outfn = os.path.basename(folder)
     join_ngram_counts(outfolder, outfp=outfn+"_ngram_count.json",
                       input_threshold=input_threshold,
@@ -188,6 +211,7 @@ count_ngrams_in_folder(folder, n=3,
                        header_splitter="#META#Header#End",
                        outfolder=outfolder,
                        token_regex=ar_tok,
-                       overwrite=False
+                       overwrite=True,
+                       across_paragraphs=True
                        )
         

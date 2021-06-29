@@ -7,6 +7,8 @@ from collections import defaultdict, OrderedDict
 from operator import itemgetter
 import re
 
+from openiti.helper.ara import normalize_ara_heavy
+    
 
 def load_ngrams(fp):
     with open(fp, mode="r", encoding="utf-8") as file:
@@ -23,28 +25,38 @@ def sort_trigrams(d):
         #el_3[s[2]].append(k)
     return el_1, el_2   #, el_3
 
-##def character_n_grams(tokens, char_d=defaultdict(lambda: defaultdict(list))):
+##def edge_n_grams(tokens, edge_d=defaultdict(lambda: defaultdict(list))):
 ##    """split tokens into character n-grams
 ##    (ch, cha, char, chara, ...) and return a dictionary of these
 ##    character n-grams with lists of their token n-grams"""
 ##    for t in tokens:
 ##        #print(t)
 ##        for i in range(2, len(t)):
-##            #print("char_d[{}][{}]".format(i, t[:i]))
+##            #print("edge_d[{}][{}]".format(i, t[:i]))
 ##            #input()
-##            char_d[i][t[:i]].append(t)
-##    return char_d
+##            edge_d[i][t[:i]].append(t)
+##    return edge_d
 
-def character_n_grams(tokens):
-    """split tokens into character n-grams
-    (ch, cha, char, chara, ...) and return a dictionary of these
-    character n-grams with lists of their token n-grams"""
-    char_d = defaultdict(list)
+def edge_n_grams(tokens, min_chars=5, normalize=normalize_ara_heavy):
+    """split tokens into edge n-grams
+    (i.e., character n-grams starting at the beginning of the token)
+    with minimum length `min_chars` and maximum length
+    the number of characters in the token.
+    
+    E.g., if the token is "character": "chara", "charac", "charact", ...
+    Return a dictionary of these edge n-grams, in which the
+    keys are the edge n-grams and the values a list of the remaining
+    characters in the tokens that start with these edge n-grams.
+    """
+    edge_d = defaultdict(list)
     for t in tokens:
         #print(t)
-        for i in range(2, len(t)):
-            char_d[t[:i]].append(t)
-    return char_d
+        for i in range(min_chars, len(t)+1):
+            if normalize:
+                edge_d[normalize(t[:i])].append(t[i:])
+            else:
+                edge_d[t[:i]].append(t[i:])
+    return edge_d
 
 def print_sorted_dict(d):
     def sort_key(e):
@@ -57,7 +69,7 @@ def print_sorted_dict(d):
         print(v, k)
 
 ##def predict_before_one_word(chars):
-##    mono = char_d[len(chars)][chars]
+##    mono = edge_d[len(chars)][chars]
 ##    print(chars, "appear in", len(mono), "words")
 ##    tri = [el_1[m] for m in mono]
 ##    tri = [item for sublist in tri for item in sublist]
@@ -94,9 +106,9 @@ def predict(chars):
     print(chars)
     
 
-    #bi = char_d_bi[chars]
+    #bi = edge_d_bi[chars]
     #d2 = {k:bigrams[k] for k in bi}
-    tri = char_d_tri[chars]
+    tri = edge_d_tri[chars]
     d3 = {k:trigrams[k] for k in tri}
     #d = dict(d2.items() | d3.items())
     
@@ -110,18 +122,18 @@ bigrams = load_ngrams(fp)
 fp = "source_texts_trigram_count.json"
 trigrams = load_ngrams(fp)
 
-##char_d_bi = character_n_grams(bigrams)
-##with open("char_ngrams_in_bigrams.json", mode="w", encoding="utf-8") as file:
-##    json.dump(char_d_bi, file, ensure_ascii=False, indent=2)
-with open("char_ngrams_in_bigrams.json", mode="r", encoding="utf-8") as file:
-    char_d_bi = json.load(file)
+edge_d_bi = edge_n_grams(bigrams)
+with open("edge_ngrams_in_bigrams.json", mode="w", encoding="utf-8") as file:
+    json.dump(edge_d_bi, file, ensure_ascii=False, indent=2)
+with open("edge_ngrams_in_bigrams.json", mode="r", encoding="utf-8") as file:
+    edge_d_bi = json.load(file)
 
 
-##char_d_tri = character_n_grams(trigrams)
-##with open("char_ngrams_in_trigrams.json", mode="w", encoding="utf-8") as file:
-##    json.dump(char_d_tri, file, ensure_ascii=False, indent=2)
-with open("char_ngrams_in_trigrams.json", mode="r", encoding="utf-8") as file:
-    char_d_tri = json.load(file)
+edge_d_tri = edge_n_grams(trigrams)
+with open("edge_ngrams_in_trigrams.json", mode="w", encoding="utf-8") as file:
+    json.dump(edge_d_tri, file, ensure_ascii=False, indent=2)
+with open("edge_ngrams_in_trigrams.json", mode="r", encoding="utf-8") as file:
+    edge_d_tri = json.load(file)
 
 chars = input("type some characters: ")
 predict(chars)
