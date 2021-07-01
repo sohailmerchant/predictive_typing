@@ -20,6 +20,45 @@ var normalizeChars = {
     "ة": "ه"
   };
 
+var apiURL = "http://localhost:5000/API/IslamAtlasNgrams?edge=";
+
+/*var edge = "الطول وال";
+//let data = await fetch(url)
+console.log(api+edge)
+fetch(api+edge)
+.then(function(resp){
+  return resp.json();
+}).then(function(data){
+  console.log(data);
+  apiRes = data;
+}).catch(function(error) {
+  console.log(error);
+});
+console.log("data loaded");*/
+
+function lookupInAPI(edge, line_before_cursor){
+  fetch(apiURL+edge)
+  .then(function(resp){
+    if (resp.ok) {
+      return resp.json();
+    } else {
+      throw new Error("No data found");
+    }
+  }).then(function(r){
+    console.log(r);
+    if (r.length > 0){
+      displayPrediction(r, line_before_cursor);
+    } else {
+      removeAllChildNodes(predBox);
+      predBox.style.display= "none";
+    }
+  }).catch(function(error) {
+    console.log(error);
+  });
+}
+
+
+/*
 // Load json data from GitHub:
 var trigrams = "temp"; // loadJSON("https://raw.githubusercontent.com/pverkind/predictive_typing/main/char_ngrams_in_trigrams.json");
 var triFreq = "temp"; // loadJSON("https://raw.githubusercontent.com/pverkind/predictive_typing/main/source_texts_trigram_count.json");
@@ -55,7 +94,9 @@ async function loadBigrams() {
 async function loadTrigrams() {
     triFreq = await getJsonData("https://pverkind.github.io/predictive_typing/source_texts_trigrams_normalized_keys.json");
     console.log("triFreq loaded");
-}
+}*/
+
+
 
 function resizeTextBox() {
   var textbox = document.getElementById("trans-input");
@@ -112,6 +153,8 @@ function initializePredBox(e) {
     // set the height of the text box to 80px to make the diacritics visible:
     resizeTextBox();
     console.log(predBox.textContent);
+    lookupInAPI("blabla");
+
 
     predBox.addEventListener("keydown", handlePredEvents);
   }
@@ -356,7 +399,9 @@ function predict(){
   console.log("lastTwo: "+lastTwo);
   console.log([lastTokens, lastTok, lastTwo]);
 
-  var r3 = lookup(lastTwo, trigrams, triFreq);
+  lookupInAPI(lastTwo, line_before_cursor);
+
+  /*var r3 = lookup(lastTwo, trigrams, triFreq);
   console.log("found "+r3.length+" trigram results for "+lastTwo);
   console.log(r3);
 
@@ -377,7 +422,7 @@ function predict(){
     displayPrediction(r, line_before_cursor);
   } else {
     predBox.style.display= "none";
-  }
+  }*/
 }
 
 // add click + key event listeners to the transcription input

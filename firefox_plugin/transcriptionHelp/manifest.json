@@ -18,6 +18,7 @@
   "permissions": [
     "*://raw.githubusercontent.com/pverkind/*",
     "*://pverkind.github.io/*",
-    "webRequest"
+    "webRequest",
+    "*://localhost/*"
   ]
 }
