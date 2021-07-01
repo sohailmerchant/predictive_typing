@@ -31,6 +31,9 @@ loadBigrams();
 loadTrigrams();
 
 
+
+
+
 async function getJsonData(url) {
     let response = await fetch(url);
     let data = await response.json();
@@ -62,17 +65,17 @@ function resizeTextBox() {
 }
 
 function initializePredBox(e) {
-  if (!document.body.contains(document.getElementById("predBox"))) {
+  if (!document.body.contains(document.getElementById("predBoxDiv"))) {
     console.log("clicked in textbox");
     //console.log(biFreq);
     textbox = document.getElementById("trans-input");
     //console.log(textbox.value);
 
     // add the predictions box and put it in a wrapper div with the textbox:
-    var wrapper = document.createElement('div');
-    wrapper.setAttribute("id", "predBoxWrapper");
+    //var wrapper = document.createElement('div');
+    //wrapper.setAttribute("id", "predBoxWrapper");
     var predBoxDiv = document.createElement('div');
-    predBoxDiv.setAttribute("id", "predBox");
+    predBoxDiv.setAttribute("id", "predBoxDiv");
     predBoxDiv.textContent = "predBox placeholder";
     /*// handle these style elements in css:
     predBoxDiv.style.display = "none";
@@ -87,10 +90,13 @@ function initializePredBox(e) {
     predBoxDiv.style.transform = textbox.style.transform;
     predBoxDiv.style.width = textbox.style.width;
 
-    wrapper.appendChild(textbox.cloneNode(true));
-    wrapper.appendChild(predBoxDiv);
-    textbox.parentNode.replaceChild(wrapper, textbox);
+    //wrapper.appendChild(textbox.cloneNode(true));
+    //wrapper.appendChild(predBoxDiv);
+    //textbox.parentNode.replaceChild(wrapper, textbox);
     //wrapper.style.border = "5px solid red";
+
+    // insert the predBoxDiv after the textbox:
+    textbox.parentNode.insertBefore(predBoxDiv, textbox.nextSibling);
     predBox = predBoxDiv;
 
     // enable focus move with arrow keys:
@@ -127,36 +133,39 @@ function handleInputEvents(e){
 
   var lastKey = e.key;
   console.log("lastKey: "+lastKey);
-  //if (lastKey === 38 ) {  // up arrow
-  if (lastKey === "ArrowDown" ) {
-    /*console.log("savedCursorPos:");
-    textboxCursorPos = savedCursorPos;
-    console.log(savedCursorPos);*/
+  if (lastKey === "ArrowDown" ) { // keycode 40
     e.preventDefault();
-    /*console.log("ArrowDown");
-    console.log(textboxCursorPos);*/
+    predBox.style.display = "block";
+    predBox.firstChild.style.backgroundColor = "white";
+    predBox.firstChild.nextElementSibling.focus();
+    document.activeElement.style.backgroundColor = "lightgrey";
+  } else if  (lastKey === "ArrowUp" ) {  // keyCode 38
+    e.preventDefault();
+    predBox.firstChild.style.backgroundColor = "white";
     predBox.style.display = "block";
     predBox.lastChild.focus();
-    //predBox.lastChild.style.backgroundColor = "lightgrey";
-  //} else if  (lastKey === 40 ) {  // down arrow
-  } else if  (lastKey === "ArrowUp" ) {
-    /*textboxCursorPos = savedCursorPos;
-    console.log("savedCursorPos:");
-    console.log(savedCursorPos);*/
-    e.preventDefault();
-    /*console.log("ArrowUp");
-    console.log(textboxCursorPos);*/
-    predBox.style.display = "block";
-    predBox.firstChild.focus();
+    document.activeElement.style.backgroundColor = "lightgrey";
     //predBox.firstChild.style.backgroundColor = "lightgrey";
   //} else if (lastKey === 13 ) { // Enter
-  } else if (lastKey === "Enter" ) {
+  } else if (lastKey === "Enter") {
     prevLine = textbox.value;
     console.log("updated prevLine value: "+prevLine);
     // close textBox and open new one
+  } else if (lastKey === "Tab") {
+    e.preventDefault();
+    addToInput(predBox.firstChild.getElementsByTagName("a")[0].textContent);
+    predict();
   } else {
     predict();
   }
+}
+
+function lastElementSibling(node) {
+  return node.parentNode.querySelector(node.nodeName + ':last-of-type');
+}
+
+function firstElementSibling(node) {
+  return node.parentNode.querySelector(node.nodeName + ':first-of-type');
 }
 
 // handle key events in the predBox:
@@ -171,20 +180,27 @@ function handlePredEvents(e){
 
   if (lastKey === "ArrowUp" ) {
     e.preventDefault();
-    //document.querySelector(".pred-div:focus").prev().focus();
-    console.log("ArrowUp!");
-    //document.querySelector(".pred-div:focus").prev().focus();
-    //document.querySelector(".pred-div:focus").previousElementSibling.focus();
-    document.activeElement.previousElementSibling.focus();
+    document.activeElement.style.backgroundColor = "white";
+    let first = firstElementSibling(document.activeElement);
+    if (document.activeElement === first) {
+      lastElementSibling(document.activeElement).focus();
+    } else {
+      document.activeElement.previousElementSibling.focus();
+    }
+    document.activeElement.style.backgroundColor = "lightgrey";
 
-  //} else if  (lastKey === 40 ) {  // down arrow
-  } else if  (lastKey === "ArrowDown" ) {
+  } else if  (lastKey === "ArrowDown" ) {  // keyCode 40
     e.preventDefault();
-    console.log("ArrowDown!");
-    //document.querySelector(".pred-div:focus").next().focus();
-    //document.querySelector(".pred-div:focus").nextElementSibling.focus();
-    document.activeElement.nextElementSibling.focus();
-  } else if (lastKey === "Tab") {
+    document.activeElement.style.backgroundColor = "white";
+    let last = lastElementSibling(document.activeElement);
+    if (document.activeElement === last) {
+      firstElementSibling(document.activeElement).focus();
+    } else {
+      document.activeElement.nextElementSibling.focus();
+    }
+    document.activeElement.style.backgroundColor = "lightgrey";
+
+  } else if (lastKey === "Tab" || lastKey === "Enter") {
     e.preventDefault();
     addToInput(document.activeElement.getElementsByTagName("a")[0].textContent);
     predict();
@@ -204,7 +220,7 @@ function addToInput(s) {
   console.log("textboxCursorPos:"+textboxCursorPos[0]+","+textboxCursorPos[1]);
   let textbox = document.getElementById("trans-input");
   let line = textbox.value;
-  textbox.value = line.substring(0, textboxCursorPos[0]) + s+" " + line.substring(textboxCursorPos[1], line.length);
+  textbox.value = line.substring(0, textboxCursorPos[0]) + s.trim() +" " + line.substring(textboxCursorPos[1], line.length);
   textboxCursorPos = [textboxCursorPos[0]+s.length+1, textboxCursorPos[1]+s.length+1];
   textbox.focus();
 }
@@ -224,14 +240,21 @@ function lookup(tok, edgeNgrams, freq) {
     return [];
   }
   var n = edgeNgrams[normalize(tok)];
+  console.log("number of edgeNgrams found:"+n.length);
+  console.log(n);
   //console.log("Lookup found "+n.length+" results")
   var r = new Array();
   for (let i=0; i<n.length; i++) {
     //var nxt = n[i].substring(tok.length, n[i].length);
     var nxt = n[i];
-    var normalized_key = normalize(tok+nxt);
-    for (const k in freq[normalized_key]) {
-      r.push([ k.substring(tok.length, k.length), freq[normalized_key][k] ]);
+    if (nxt !== "") {
+      console.log("nxt: "+nxt);
+      var normalizedKey = normalize(tok+nxt);
+      console.log("normalizedKey: "+normalizedKey);
+      for (const k in freq[normalizedKey]) {
+        console.log("    const k in freq[normalizedKey]: "+k);
+        r.push([ k.substring(tok.length, k.length), freq[normalizedKey][k] ]);
+      }
     }
 
   }
@@ -274,7 +297,10 @@ function displayPrediction(pred, prev){
     predDiv.style.display = "block";
     predDiv.style.direction = "rtl";
     predDiv.style.textAlign = "right";
-    predDiv.tabIndex = "-1";
+    predDiv.tabIndex = "-1";  // make div focussable
+    if (i === 0) {
+      predDiv.style.backgroundColor = "lightgrey";
+    }
     // predDiv.textContent = pred[i];
     // predDiv.innerHtml = prev+pred[i][0];
     let pred_a = document.createElement("a");
@@ -305,7 +331,16 @@ function predict(){
 
   var line = textbox.value;
   console.log(line);
-  lastLines = prevLine + " " + line;
+  var line_before_cursor = line.substring(0,textboxCursorPos[0]);
+  var line_after_cursor = line.substring(textboxCursorPos[1], line.length);
+  console.log(line_before_cursor + " - " + line_after_cursor);
+  console.log("prevLine in array:");
+  console.log([prevLine]);
+  if (prevLine.length > 0) {
+    var lastLines = prevLine + " " + line_before_cursor;
+  } else {
+    var lastLines = line_before_cursor;
+  }
   if (lastLines.length < 5) {
     console.log("less than 5 characters. Waiting for more characters before starting prediction");
     return;
@@ -317,24 +352,32 @@ function predict(){
   var lastTok = lastTokens[lastTokens.length-1];
   var lastTwo = lastTokens[lastTokens.length-2] + " " + lastTok;
 
-  //console.log("lastTok: "+lastTok);
-  //console.log("lastTwo: "+lastTwo);
+  console.log("lastTok: "+lastTok);
+  console.log("lastTwo: "+lastTwo);
+  console.log([lastTokens, lastTok, lastTwo]);
 
   var r3 = lookup(lastTwo, trigrams, triFreq);
   console.log("found "+r3.length+" trigram results for "+lastTwo);
+  console.log(r3);
 
   var r2 = lookup(lastTwo, bigrams, biFreq);
   console.log("found "+r2.length+" bigram results for"+lastTwo);
+  console.log(r2);
 
-  var r = new Set([...r2,...r3]); // union
-  r = Array.from(r);
+  //var r = new Set([...r2,...r3]); // union
+  //r = Array.from(r);
+  var r = [... new Set([...r2,...r3])]; // union
   console.log("found "+r.length+" bi-and trigram results for "+lastTwo);
   console.log(r);
-  r.sort(function(a,b){
-    return a[1] - b[1];
-  }).reverse();
-  //return r;
-  displayPrediction(r, line);
+  if (r.length > 0){
+    r.sort(function(a,b){
+      return a[1] - b[1];
+    }).reverse();
+    //return r;
+    displayPrediction(r, line_before_cursor);
+  } else {
+    predBox.style.display= "none";
+  }
 }
 
 // add click + key event listeners to the transcription input
@@ -343,17 +386,44 @@ document.addEventListener('mouseup',function(e){
   if (e.target && e.target.id=='trans-input'){
     //console.log("CLICKED e.target.id "+e.target.id);
     initializePredBox(e);
+    textbox.focus();
   }
 });
 document.addEventListener('keyup',function(e){
+  //if (e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+  console.log(e.key);
+  console.log(e.which);
+  if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == "Tab") {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("tried to stop keyup event from propagating");
+  }
   if (e.target && e.target.id=='trans-input'){
     handleInputEvents(e);
   }
-});
+}, true);
 document.addEventListener('keydown',function(e){
+  //if (e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+  console.log(e.key);
+  console.log(e.which);
+  if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == "Tab") {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("tried to stop keydown event from propagating");
+  }
   if (e.target && e.target.id=='trans-input'){
     textboxCursorPos = [e.target.selectionStart, e.target.selectionEnd].sort();
     console.log("textboxCursorPos at keydown: ");
     console.log(textboxCursorPos);
   }
-});
+}, true);
+
+document.addEventListener('keypress',function(e){
+  //if (e.key === "Tab" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log("tried to stop keypress event from propagating");
+
+  }
+}, true);
